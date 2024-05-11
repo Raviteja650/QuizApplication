@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+        .quiz-container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .question {
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        .question.active {
+            transform: scale(1);
+        }
+        .question:not(.active) {
+            display: none;
+        }
+        .question h3 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        .question p {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .choices li {
+            list-style: none;
+            margin-bottom: 5px;
+        }
+        .choices label {
+            display: block;
+            padding-left: 25px;
+            position: relative;
+            cursor: pointer;
+        }
+        .choices input[type="radio"] {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .navigation {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .navigation button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .navigation button:hover {
+            background-color: #0056b3;
+        }
+        .no-questions {
+            text-align: center;
+            margin-top: 20px;
+            color: #777;
+        }
+
+        button:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+<div th:if="${questions}" class="quiz-container">
+    <form id="quizForm">
+        <!-- Display only the active question -->
+<!--        <input type="hidden" id="loggedInUser" th:value="${loggedInUser}" />-->
+<!--        <span type="hidden" th:if="${loggedInUser}" th:text="${loggedInUser}"></span>-->
+        <input type="hidden" th:if="${loggedInUser}" th:attr="value=${loggedInUser}, name='loggedInUser'" />
+        <input type="hidden" th:if="${availableQuestions}" th:attr="value=${availableQuestions}, name='availableQuestions'" />
+        <input type="hidden" th:if="${subject}" th:attr="value=${subject}, name='subject'" />
+
+
+        <div th:each="question, questionIndex : ${questions}" class="question" th:classappend="${questionIndex.index == currentQuestionIndex ? 'active' : ''}">
+            <h3>Question <span th:text="${questionIndex.index + 1}"></span></h3>
+            <p th:text="${question.question}"></p>
+            <!-- Add answer options -->
+            <ul th:if="${question.choices}" class="choices">
+                <li th:each="choice : ${question.choices}">
+                    <label>
+                        <input type="radio" th:name="'question_' + ${questionIndex.index}" th:value="${choice}"/>
+                        <span th:text="${choice}"></span>
+                    </label>
+                </li>
+            </ul>
+        </div>
+        <div class="navigation">
+            <button type="button" id="previousButton" onclick="previousQuestion()" disabled>Previous</button>
+            <button type="button" id="nextButton" onclick="nextQuestion()">Next</button>
+        </div>
+    </form>
+</div>
+<div th:unless="${questions}" class="no-questions">
+    <p>No questions available for this subject.</p>
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+    var currentQuestionIndex = 0;
+    var questions = document.querySelectorAll('.question');
+    var previousButton = document.getElementById('previousButton');
+    var nextButton = document.getElementById('nextButton');
+    var quizForm = document.getElementById('quizForm');
+
+     var loggedInUser = document.querySelector('input[name="loggedInUser"]').value;
+     var subject=document.querySelector('input[name="subject"]').value;
+     var Questions=document.querySelector('input[name="availableQuestions"]').value;
+     console.log(loggedInUser+" "+subject+" "+Questions);
+
+    // Immediately disable the previous button on page load
+    if (currentQuestionIndex === 0) {
+        previousButton.disabled = true;
+    } else {
+        previousButton.disabled = false;
+    }
+
+    function updateButtons() {
+        // Enable/disable previous button based on current question index
+        previousButton.disabled = currentQuestionIndex === 0;
+        // Enable/disable next button based on current question index
+        nextButton.disabled = currentQuestionIndex === questions.length - 1;
+        // Change next button to submit button if it's the last question
+        if (currentQuestionIndex === questions.length - 1) {
+            nextButton.innerHTML = 'Submit Test';
+            nextButton.setAttribute('type', 'submit');
+            nextButton.removeAttribute('disabled');
+        } else {
+            nextButton.innerHTML = 'Next';
+            nextButton.setAttribute('type', 'button');
+        }
+    }
+
+    function showQuestion(index) {
+        for (var i = 0; i < questions.length; i++) {
+            if (i === index) {
+                questions[i].classList.add('active');
+            } else {
+                questions[i].classList.remove('active');
+            }
+        }
+    }
+
+    var userChoices = new Array(questions.length).fill(null);
+    var score = 0; // Initialize score variable
+
+function nextQuestion() {
+    var currentQuestion = questions[currentQuestionIndex];
+    //console.log(currentQuestionIndex);
+    var selectedChoice = currentQuestion.querySelector('input[type="radio"]:checked');
+    if (selectedChoice) {
+        var userChoice = selectedChoice.value.split('.')[0];
+        var questionText = currentQuestion.querySelector('p').textContent.trim();
+        var xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+                if (xhr.status === 200) {
+                    var correctAnswer = xhr.responseText.trim().toUpperCase();
+                    if (userChoices[currentQuestionIndex] == null) {
+                        userChoices[currentQuestionIndex] = userChoice;
+                        console.log(userChoices[currentQuestionIndex]);
+                        if(userChoice===correctAnswer){
+                        score++;
+                        console.log(score);
+                        }
+                    }
+                    else if(userChoices[currentQuestionIndex]!=null)
+                    {
+                       userChoices[currentQuestionIndex]=null;
+                       score--;
+                       userChoices[currentQuestionIndex]=userChoice;
+                       console.log(userChoices[currentQuestionIndex]);
+                       if(userChoices[currentQuestionIndex]===correctAnswer)
+                       {
+                       score++;
+                       console.log(score);
+                       }
+                    }
+                    // Move to the next question
+                    if (currentQuestionIndex < questions.length - 1) {
+                        currentQuestionIndex++;
+                        showQuestion(currentQuestionIndex);
+                        updateButtons();
+                    } else {
+                        alert("Are you sure to submit the test");
+                        if(score<0)
+                        score=0;
+                        window.location.href = "/result?score=" + encodeURIComponent(score) + "&loggedInUser=" + encodeURIComponent(loggedInUser)
+                        + "&subject=" + encodeURIComponent(subject) + "&Questions=" + encodeURIComponent(Questions);
+                    }
+                } else {
+                    alert("Failed to fetch correct answer for the current question.");
+                }
+            }
+        };
+        xhr.open("GET", "/getCorrectAnswer?questionText=" + encodeURIComponent(questionText), true);
+        xhr.send();
+    } else {
+        alert("Please select an answer for the current question.");
+    }
+}
+
+function previousQuestion() {
+    var currentQuestion = questions[currentQuestionIndex];
+    var selectedChoice = currentQuestion.querySelector('input[type="radio"]:checked');
+    if (selectedChoice) {
+        var userChoice = selectedChoice.value.split('.')[0];
+        var questionText = currentQuestion.querySelector('p').textContent.trim();
+        var xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+                if (xhr.status === 200) {
+                    var correctAnswer = xhr.responseText.trim().toUpperCase();
+                    if (userChoices[currentQuestionIndex]!=null) {
+                        userChoices[currentQuestionIndex]=null;
+                        score--;
+                        console.log(score);
+                    }
+                    if(userChoices[currentQuestionIndex]==null)
+                    {
+                       userChoices[currentQuestionIndex]=userChoice;
+                       console.log(userChoices[currentQuestionIndex]);
+                       if(userChoices[currentQuestionIndex]==correctAnswer)
+                       {
+                       score++;
+                       console.log(score);
+                       }
+                    }
+                    // Move to the previous question
+                    if (currentQuestionIndex > 0) {
+                        currentQuestionIndex--;
+                        showQuestion(currentQuestionIndex);
+                        updateButtons();
+                    }
+                }
+            }
+        };
+        xhr.open("GET", "/getCorrectAnswer?questionText=" + encodeURIComponent(questionText), true);
+        xhr.send();
+    } else {
+            if (currentQuestionIndex > 0) {
+                        currentQuestionIndex--;
+                        showQuestion(currentQuestionIndex);
+                        updateButtons();
+            }
+    }
+}
+
+    // Attach event listeners to buttons
+    previousButton.addEventListener('click', previousQuestion);
+    nextButton.addEventListener('click', nextQuestion);
+
+    // Prevent form submission
+    quizForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        // Alert the total score when the submit button is clicked
+        //alert("Your total score is : " + score);
+    });
+
+    // Initial state of buttons and questions
+    updateButtons();
+    showQuestion(currentQuestionIndex);
+});
+</script>
+</body>
+</html>

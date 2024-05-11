@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quiz Application</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        form {
+            max-width: 600px;
+            margin: 50px auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+
+        button:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+<form id="quizForm">
+    <h1 id="formTitle">Select a Subject</h1>
+    <select id="subject" name="subjectId" class="form-control">
+        <option value="">Select subject</option>
+        <!-- Iterate over subjectOptions to populate previous subjects -->
+        <option th:each="option : ${subjectOptions}" th:value="${option}" th:text="${option}"></option>
+    </select>
+
+    <div id="numberQuestions" style="display: none;">
+        <label for="numberInput">Number of Questions:</label>
+        <input type="number" id="numberInput" name="numberOfQuestions" placeholder="Enter a number">
+    </div>
+
+    <button type="button" id="previousButton" disabled onclick="previous()">Previous</button>
+    <button type="button" id="nextButton" onclick="validateAndNext()">Next</button>
+    <button type="button" id="startQuizButton" style="display: none;" onclick="validateAndStartQuiz()">Start Quiz</button>
+</form>
+
+<script>
+    // Global variables to track quiz state
+    var currentSectionIndex = 0;
+    var totalSections = 2; // Total number of sections (subject selection and number of questions)
+    var quizSections = ["Select a Subject", "Select Number of Questions"];
+
+    // Function to initialize the quiz
+    function initializeQuiz() {
+        displayCurrentSection();
+    }
+
+    // Function to display the current section/topic
+    function displayCurrentSection() {
+        var formTitle = document.getElementById("formTitle");
+        formTitle.innerText = quizSections[currentSectionIndex];
+
+        // Hide/show elements based on current section
+        if (currentSectionIndex === 0) {
+            document.getElementById("subject").style.display = "block";
+            document.getElementById("numberQuestions").style.display = "none";
+            document.getElementById("startQuizButton").style.display = "none";
+        } else if (currentSectionIndex === 1) {
+            document.getElementById("subject").style.display = "none";
+            document.getElementById("numberQuestions").style.display = "block";
+            document.getElementById("startQuizButton").style.display = "none"; // Hide "Start Quiz" button initially
+            document.getElementById("nextButton").innerText = "Next"; // Reset button text to "Next"
+        }
+
+        // Enable/disable previous button based on current section
+        var previousButton = document.getElementById("previousButton");
+        if (currentSectionIndex === 0) {
+            previousButton.disabled = true;
+        } else {
+            previousButton.disabled = false;
+        }
+
+        // Show/hide "Start Quiz" button based on current section index
+        var nextButton = document.getElementById("nextButton");
+        var startQuizButton = document.getElementById("startQuizButton");
+        if (currentSectionIndex === totalSections - 1) {
+            nextButton.style.display = "none";
+            startQuizButton.style.display = "inline-block";
+        } else {
+            nextButton.style.display = "inline-block";
+            startQuizButton.style.display = "none";
+        }
+    }
+
+    // Function to navigate to the previous section/topic
+    function previous() {
+        if (currentSectionIndex > 0) {
+            currentSectionIndex--;
+            displayCurrentSection();
+        } else {
+            alert("You are already at the first section.");
+        }
+    }
+
+    // Function to navigate to the next section/topic
+    function next() {
+        if (currentSectionIndex < totalSections - 1) {
+            currentSectionIndex++;
+            displayCurrentSection();
+        } else {
+            alert("You have reached the last section.");
+        }
+    }
+
+    // Function to validate subject selection and number of questions before proceeding to the next section
+    function validateAndNext() {
+        if (currentSectionIndex === 0) {
+            var selectedSubject = document.getElementById("subject").value;
+            if (!selectedSubject) {
+                alert("Please select a subject.");
+                return;
+            }
+        } else if (currentSectionIndex === 1) {
+            var numberOfQuestions = document.getElementById("numberInput").value;
+            if (!numberOfQuestions) {
+                alert("Please enter the number of questions.");
+                return;
+            }
+        }
+        next();
+    }
+
+    // Function to start the quiz after validation
+    function validateAndStartQuiz() {
+        var selectedSubject = document.getElementById("subject").value;
+        var numberOfQuestions = document.getElementById("numberInput").value;
+        if (!selectedSubject) {
+            alert("Please select a subject.");
+            return;
+        }
+        if (!numberOfQuestions) {
+            alert("Please enter the number of questions.");
+            return;
+        }
+        startQuiz(selectedSubject, numberOfQuestions);
+    }
+
+    // Function to start the quiz
+    function startQuiz(subject, numberOfQuestions) {
+        // Redirect to quiz page with selected subject and number of questions as URL parameters
+        window.location.href = "/quizPage?subject=" + encodeURIComponent(subject) + "&numberOfQuestions=" + encodeURIComponent(numberOfQuestions);
+    }
+
+    // Initialize the quiz when the page loads
+    initializeQuiz();
+</script>
+</body>
+</html>
