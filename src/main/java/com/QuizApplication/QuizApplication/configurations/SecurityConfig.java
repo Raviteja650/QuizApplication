@@ -44,7 +44,7 @@ public class SecurityConfig {
 		.authorizeHttpRequests(request -> request
 				.requestMatchers("/admin-page","/allUsers","/delete","/showFormForUpdate","/update","/add","/saveQuestion","/allQuestion","/delete-question","/edit-question","/update-question").hasAuthority("ADMIN")
 				.requestMatchers("/user-page","/result","/getCorrectAnswer","/quizPage","/takeQuiz","/history","/updateForm","/updateUser").hasAuthority("USER")
-				.requestMatchers("/","/success","/login","/registration","/css/**","/verifyEmail").permitAll()
+				.requestMatchers("/","/success","/login","/registration/**","/css/**","/verifyEmail","/error","/resendVerification").permitAll()
 				.anyRequest().authenticated())
 
 		.formLogin(form -> form.loginPage("/login").loginProcessingUrl("/login")

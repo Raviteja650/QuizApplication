@@ -86,7 +86,7 @@ public class QuestionController {
 
 
     @GetMapping("/edit-question")
-        public String showUpdateForm(@RequestParam String id, Model model) {
+    public String showUpdateForm(@RequestParam String id, Model model) {
         Optional<Question> question = questionService.getQuestionById(id);
         if(question.isPresent()) {
             model.addAttribute("question", question.get());

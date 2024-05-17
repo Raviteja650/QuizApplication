@@ -16,4 +16,8 @@ public interface VerificationTokenService {
 
     void deleteUserToken(User user);
 
+    VerificationToken generareNewToken(String oldToken);
+
+    String getTokenByUser(Long id);
+
 }

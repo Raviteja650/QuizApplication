@@ -39,14 +39,17 @@ public class UserController {
 	private final ApplicationEventPublisher publisher;
 
 	private final VerificationTokenService verificationTokenService;
+
+	private final JavaMailSender mailSender;
 	
 	@Autowired
 	private UserService userService;
 
-	public UserController(IQuestionService questionService, ApplicationEventPublisher publisher, VerificationTokenService verificationTokenService) {
+	public UserController(IQuestionService questionService, ApplicationEventPublisher publisher, VerificationTokenService verificationTokenService, JavaMailSender mailSender) {
 		this.questionService = questionService;
 		this.publisher = publisher;
 		this.verificationTokenService = verificationTokenService;
+		this.mailSender = mailSender;
 	}
 
 	private static final String EMAIL_REGEX =
@@ -69,9 +72,9 @@ public class UserController {
 	public String getRegistrationPage(@ModelAttribute("user") UserDto userDto) {
 		return "register";
 	}
-	
+
 	@PostMapping("/registration")
-	public String saveUser(@ModelAttribute("user") UserDto userDto, RedirectAttributes redirectAttributes, Model model, final HttpServletRequest request) {
+	public String saveUser(@ModelAttribute("user") UserDto userDto, RedirectAttributes redirectAttributes, Model model,final HttpServletRequest request) {
 		String[] email=userDto.getEmail().split("@");
 		String suffix=email[1];
 		System.out.println(email[0]+"   "+email[1]);
@@ -92,12 +95,18 @@ public class UserController {
 		}
 		else {
 			userService.save(userDto);
-
 			User user=userService.findByEmail(userDto.getEmail());
 			publisher.publishEvent(new RegistrationCompleteEvent(user,applicationUrl(request)));
 			redirectAttributes.addFlashAttribute("message", "Registration Successful, please check your mail to activate your account.");
-			return "redirect:/registration";
+			String token=verificationTokenService.getTokenByUser(user.getId());
+			log.info(token);
+			return "redirect:/registration/success?token="+token;
 		}
+	}
+	@GetMapping("/registration/success")
+	public String registrationSuccess(@RequestParam(name = "token",required = false) String token, Model model) {
+		model.addAttribute("token",token);
+		return "registration-success";
 	}
 
 	private String applicationUrl(HttpServletRequest request) {
@@ -129,6 +138,42 @@ public class UserController {
 		}
 	}
 
+	@GetMapping("/resendVerification")
+	public String resendVerificationToken(@RequestParam("token") String oldToken,HttpServletRequest request,RedirectAttributes redirectAttributes) throws MessagingException, UnsupportedEncodingException {
+		VerificationToken verificationToken=verificationTokenService.generareNewToken(oldToken);
+		User user=verificationToken.getUser();
+		resendVerificationTokenMail(user,applicationUrl(request),verificationToken);
+		log.info("mail send success");
+		String token=verificationToken.getToken();
+		redirectAttributes.addFlashAttribute("message", "A new verification email has been sent to your email address.");
+		return "redirect:/registration/success?token="+token;
+
+	}
+
+	private void resendVerificationTokenMail(User user, String applicationUrl, VerificationToken verificationToken) throws MessagingException,UnsupportedEncodingException {
+		String url=
+				applicationUrl+"/verifyEmail?token="+verificationToken.getToken();
+		log.info(url);
+		String subject="Resend-Verification Email";
+		String mailContent = "<p> Hi, "+ user.getFullname()+ ", </p>"+
+				"<p>Thank you for registering with us,"+"" +
+				"Please, follow the link below to complete your registration.</p>"+
+				"<p>The link is active for 10 mintues.</p>"+
+				"<a  class=\"button-link\" href=\"" +url+ "\">Activate your account</a>"+
+				"<p> Thank you <br> Online Quiz Application Service";
+		emailMessage(subject,mailContent, mailSender, user);
+
+	}
+
+	private void emailMessage(String subject, String mailContent, JavaMailSender mailSender, User user) throws MessagingException,UnsupportedEncodingException {
+		MimeMessage message=mailSender.createMimeMessage();
+		var messageHelper=new MimeMessageHelper(message);
+		messageHelper.setFrom("ravitejab650@gmail.com");
+		messageHelper.setTo(user.getEmail());
+		messageHelper.setSubject(subject);
+		messageHelper.setText(mailContent,true);
+		mailSender.send(message);
+	}
 
 
 	@GetMapping("/error")
@@ -162,9 +207,9 @@ public class UserController {
 	public String delete(@RequestParam("employeeId") long theId) {
 		User user=userService.findById(theId);
 		verificationTokenService.deleteUserToken(user);
-		// delete the employee
+
 		userService.deleteById(theId);
-		// redirect to /employees/list
+
 		return "redirect:/allUsers";
 
 	}
@@ -173,13 +218,13 @@ public class UserController {
 	public String showFormForUpdate(@RequestParam("employeeId") long theId,
 									Model theModel) {
 
-		// get the employee from the service
+
 		User theEmployee = userService.findById(theId);
 
-		// set employee as a model attribute to pre-populate the form
+
 		theModel.addAttribute("employee", theEmployee);
 
-		// send over to our form
+
 		return "UserForm";
 	}
 

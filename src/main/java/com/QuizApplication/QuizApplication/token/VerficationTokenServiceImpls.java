@@ -6,8 +6,12 @@ import com.QuizApplication.QuizApplication.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -47,6 +51,24 @@ public class VerficationTokenServiceImpls implements VerificationTokenService{
     @Override
     public void deleteUserToken(User user) {
         verificationTokenRepo.deleteById(user.getId());
+    }
+
+    @Override
+    public VerificationToken generareNewToken(String oldToken) {
+        VerificationToken verificationToken=verificationTokenRepo.find(oldToken);
+        verificationToken.setToken(UUID.randomUUID().toString());
+        LocalDateTime currentTime = LocalDateTime.now();
+        LocalDateTime expirationTime = currentTime.plusMinutes(3);
+
+        Date expirationDate = Date.from(expirationTime.atZone(ZoneId.systemDefault()).toInstant());
+        verificationToken.setExpirationTime(expirationDate);
+        verificationTokenRepo.save(verificationToken);
+        return  verificationToken;
+    }
+
+    @Override
+    public String getTokenByUser(Long id) {
+        return verificationTokenRepo.getTokenByUser(id);
     }
 
 
