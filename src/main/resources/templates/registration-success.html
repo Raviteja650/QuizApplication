@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Registration Success</title>
+    <style>
+        /* Add your CSS styles here */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            color: #333;
+        }
+        /* Add more styles as needed */
+    </style>
+</head>
+<body>
+<h1>Registration Successful</h1>
+<p th:text="${message}"></p>
+<form action="/resendVerification" method="get">
+    <input type="hidden" name="token" th:value="${token}" />
+    <button type="submit">Resend Verification Email</button>
+</form>
+</body>
+</html>
