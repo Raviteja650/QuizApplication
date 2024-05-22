@@ -12,4 +12,6 @@ public interface ScoreService {
     List<Result> getHistroyForUser(String loggedInUser);
 
     void updateUserName(String userName, String fullname);
+
+    void deleteuser(String fullname);
 }

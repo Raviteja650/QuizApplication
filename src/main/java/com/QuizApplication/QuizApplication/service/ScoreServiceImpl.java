@@ -61,5 +61,12 @@ public class ScoreServiceImpl implements ScoreService {
         }
     }
 
+    @Override
+    @Transactional
+    public void deleteuser(String fullname)
+    {
+        scoreRepository.deleteUser(fullname);
+    }
+
 
 }

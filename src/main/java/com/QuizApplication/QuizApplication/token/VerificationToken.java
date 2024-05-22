@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import java.util.Calendar;
 import java.util.Date;
@@ -26,11 +27,9 @@ public class VerificationToken {
 
     private Date expirationTime;
 
-    @OneToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "user_id",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "FK-USER_VERIFY_TOKEN")
-    )
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "user_id", nullable = false, foreignKey = @ForeignKey(name = "FK-USER_VERIFY_TOKEN"))
+    @JsonBackReference
     private User user;
 
     public VerificationToken(User user, String token) {

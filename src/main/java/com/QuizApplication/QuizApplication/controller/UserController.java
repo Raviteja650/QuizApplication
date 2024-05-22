@@ -12,6 +12,7 @@ import com.QuizApplication.QuizApplication.Event.RegistrationCompleteEvent;
 import com.QuizApplication.QuizApplication.dto.UserDto;
 import com.QuizApplication.QuizApplication.model.User;
 import com.QuizApplication.QuizApplication.service.IQuestionService;
+import com.QuizApplication.QuizApplication.service.ScoreService;
 import com.QuizApplication.QuizApplication.service.UserService;
 import com.QuizApplication.QuizApplication.token.VerificationToken;
 import com.QuizApplication.QuizApplication.token.VerificationTokenService;
@@ -40,15 +41,18 @@ public class UserController {
 
 	private final VerificationTokenService verificationTokenService;
 
+	private final ScoreService scoreService;
+
 	private final JavaMailSender mailSender;
 	
 	@Autowired
 	private UserService userService;
 
-	public UserController(IQuestionService questionService, ApplicationEventPublisher publisher, VerificationTokenService verificationTokenService, JavaMailSender mailSender) {
+	public UserController(IQuestionService questionService, ApplicationEventPublisher publisher, VerificationTokenService verificationTokenService, ScoreService scoreService, JavaMailSender mailSender) {
 		this.questionService = questionService;
 		this.publisher = publisher;
 		this.verificationTokenService = verificationTokenService;
+		this.scoreService = scoreService;
 		this.mailSender = mailSender;
 	}
 
@@ -204,10 +208,11 @@ public class UserController {
 
 
 	@GetMapping("/delete")
+	@Transactional
 	public String delete(@RequestParam("employeeId") long theId) {
 		User user=userService.findById(theId);
 		verificationTokenService.deleteUserToken(user);
-
+		scoreService.deleteuser(user.getFullname());
 		userService.deleteById(theId);
 
 		return "redirect:/allUsers";

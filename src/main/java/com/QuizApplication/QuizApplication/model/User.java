@@ -1,7 +1,11 @@
 package com.QuizApplication.QuizApplication.model;
 
+import com.QuizApplication.QuizApplication.token.VerificationToken;
 import jakarta.persistence.*;
 import org.hibernate.annotations.NaturalId;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "users", uniqueConstraints = @UniqueConstraint(columnNames = "email"))
@@ -19,6 +23,9 @@ public class User {
 	private String fullname;
 
 	private boolean isEnabled=false;
+
+	@OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+	private Set<VerificationToken> verificationTokens = new HashSet<>();
 
 	public User(String email, String password, String role, String fullname) {
 		this.email = email;
